@@ -3,7 +3,6 @@
 #include "common.h"
 #include "formula.h"
 
-#include <functional>
 #include <unordered_set>
 
 class Sheet;
@@ -28,9 +27,11 @@ private:
     class TextImpl;
     class FormulaImpl;
 
+    bool IsCircularDependent(const Impl& new_impl) const;
+    void InvalidateCacheRecursive(bool force, std::unordered_set<Cell*>& visited);
+
     std::unique_ptr<Impl> impl_;
-
-    // Добавьте поля и методы для связи с таблицей, проверки циклических 
-    // зависимостей, графа зависимостей и т. д.
-
-};
+    Sheet& sheet_;
+    std::unordered_set<Cell*> l_nodes_;
+    std::unordered_set<Cell*> r_nodes_;
+}; 
