@@ -26,7 +26,7 @@ public:
 
 class Cell::TextImpl final : public Impl {
 public:
-    TextImpl(std::string text) 
+    TextImpl(std::string text)
         : text_(std::move(text)) {
         if (text_.empty()) {
             throw std::logic_error("");
@@ -48,8 +48,8 @@ private:
 
 class Cell::FormulaImpl final : public Impl {
 public:
-    explicit FormulaImpl(std::string expression, const SheetInterface& sheet) 
-    : sheet_(sheet) {
+    explicit FormulaImpl(std::string expression, const SheetInterface& sheet)
+        : sheet_(sheet) {
         if (expression.empty() || expression[0] != FORMULA_SIGN) {
             throw std::logic_error("");
         }
@@ -80,7 +80,7 @@ public:
         cache_.reset();
     }
 
-    std::vector<Position> GetReferencedCells() const {
+    std::vector<Position> GetReferencedCells() const override {
         return formula_ptr_->GetReferencedCells();
     }
 
@@ -109,7 +109,7 @@ bool Cell::IsCircularDependent(const Impl& new_impl) const {
         if (!visited.insert(current).second) {
             continue;
         }
-		
+
         if (referenced.find(current) != referenced.end()) return true;
 
         for (const Cell* parent : current->l_nodes_) {
@@ -123,12 +123,31 @@ bool Cell::IsCircularDependent(const Impl& new_impl) const {
 
 void Cell::InvalidateCacheRecursive(bool force, std::unordered_set<Cell*>& visited) {
     if (!visited.insert(this).second) return;
-
     if (impl_->IsCacheValid() || force) {
         impl_->InvalidateCache();
         for (Cell* dep : l_nodes_) {
             dep->InvalidateCacheRecursive(force, visited);
         }
+    }
+}
+
+void Cell::UpdateDependencies() {
+
+    for (Cell* outgoing : r_nodes_) {
+        if (outgoing) {
+            outgoing->l_nodes_.erase(this);
+        }
+    }
+    r_nodes_.clear();
+
+    for (const auto& pos : impl_->GetReferencedCells()) {
+        Cell* outgoing = sheet_.GetCellData(pos);
+        if (!outgoing) {
+            sheet_.SetCell(pos, "");
+            outgoing = sheet_.GetCellData(pos);
+        }
+        r_nodes_.insert(outgoing);
+        outgoing->l_nodes_.insert(this);
     }
 }
 
@@ -139,6 +158,11 @@ Cell::Cell(Sheet& sheet)
 Cell::~Cell() = default;
 
 void Cell::Set(std::string text) {
+
+    if (text == GetText()) {
+        return;
+    }
+
     std::unique_ptr<Impl> impl;
 
     if (text.empty()) {
@@ -154,29 +178,14 @@ void Cell::Set(std::string text) {
     }
     impl_ = std::move(impl);
 
-    for (Cell* outgoing : r_nodes_) {
-        outgoing->l_nodes_.erase(this);
-    }
-
-    r_nodes_.clear();
-
-    for (const auto& pos : impl_->GetReferencedCells()) {
-        Cell* outgoing = sheet_.GetCellData(pos);
-        if (!outgoing) {
-            sheet_.SetCell(pos, "");
-            outgoing = sheet_.GetCellData(pos);
-        }
-        r_nodes_.insert(outgoing);
-        outgoing->l_nodes_.insert(this);
-    }
+    UpdateDependencies();
 
     std::unordered_set<Cell*> visited_nodes;
     InvalidateCacheRecursive(true, visited_nodes);
-
 }
 
 void Cell::Clear() {
-    impl_ = std::make_unique<EmptyImpl>();
+    Set("");
 }
 
 Cell::Value Cell::GetValue() const {

@@ -42,5 +42,6 @@ public:
     void PrintTexts(std::ostream& output) const override;
 
 private:
-	Table table_;
+    Table table_;
+    void ValidatePosition(Position pos) const; 
 };

@@ -11,14 +11,17 @@
 using namespace std::literals;
 
 Sheet::~Sheet() = default;
-
-void Sheet::SetCell(Position pos, std::string text) {
+void Sheet::ValidatePosition(Position pos) const {
     if (!pos.IsValid()) {
         throw InvalidPositionException("Invalid position");
     }
+}
+
+void Sheet::SetCell(Position pos, std::string text) {
+    ValidatePosition(pos); 
 
     const auto& it = table_.find(pos);
-    
+
     if (it == table_.end()) {
         table_.emplace(pos, std::make_unique<Cell>(*this));
     }
@@ -35,10 +38,7 @@ CellInterface* Sheet::GetCell(Position pos) {
 }
 
 const Cell* Sheet::GetCellData(Position pos) const {
-    if (!pos.IsValid()) {
-        throw InvalidPositionException("Invalid position");
-    }
-
+    ValidatePosition(pos); 
     const auto& it = table_.find(pos);
     if (it == table_.end()) {
         return nullptr;
@@ -52,9 +52,7 @@ Cell* Sheet::GetCellData(Position pos) {
 }
 
 void Sheet::ClearCell(Position pos) {
-    if (!pos.IsValid()) {
-        throw InvalidPositionException("Invalid position");
-    }
+    ValidatePosition(pos); 
 
     const auto& it = table_.find(pos);
     if (it != table_.end() && it->second != nullptr) {
@@ -68,7 +66,7 @@ void Sheet::ClearCell(Position pos) {
 Size Sheet::GetPrintableSize() const {
     int max_row = -1;
     int max_col = -1;
-    Size size {max_row, max_col};
+    Size size{max_row, max_col};
 
     for (const auto& [pos, cell] : table_) {
         if (cell != nullptr) {
@@ -91,10 +89,10 @@ void Sheet::PrintValues(std::ostream& output) const {
             const auto& it = table_.find(pos);
             if (it != table_.end() && it->second != nullptr) {
                 std::visit(
-                    [&](const auto& value) { 
-                        output << value; 
+                    [&](const auto& value) {
+                        output << value;
                     },
-                it->second->GetValue());
+                    it->second->GetValue());
             }
         }
         output << '\n';

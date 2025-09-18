@@ -29,9 +29,11 @@ private:
 
     bool IsCircularDependent(const Impl& new_impl) const;
     void InvalidateCacheRecursive(bool force, std::unordered_set<Cell*>& visited);
+  
+    void UpdateDependencies();
 
     std::unique_ptr<Impl> impl_;
     Sheet& sheet_;
     std::unordered_set<Cell*> l_nodes_;
     std::unordered_set<Cell*> r_nodes_;
-}; 
+};
