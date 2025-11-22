@@ -6,6 +6,7 @@
 
 ## Системные требования
 
-C++17, [Java SE Runtime Environment 8](https://www.oracle.com/java/technologies/downloads/#java8), [ANTLR](https://www.antlr.org/) , CMake.
+C++17, [Java SE Runtime Environment 8](https://www.oracle.com/java/technologies/downloads/#java8), [ANTLR](https://www.antlr.org/), CMake.
+
 
 
